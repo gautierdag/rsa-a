@@ -113,7 +113,6 @@ def save_model_state(model, model_path: str, epoch: int, iteration: int):
         checkpoint_state["epoch"] = epoch
     if iteration:
         checkpoint_state["iteration"] = iteration
-
     torch.save(checkpoint_state, model_path)
 
 

@@ -61,7 +61,6 @@ class Receiver(nn.Module):
 
     def reset_parameters(self):
         nn.init.normal_(self.embedding, 0.0, 0.1)
-        # self.input_module.reset_parameters()
         if type(self.rnn) is nn.LSTMCell:
             nn.init.xavier_uniform_(self.rnn.weight_ih)
             nn.init.orthogonal_(self.rnn.weight_hh)
@@ -71,10 +70,14 @@ class Receiver(nn.Module):
                 self.rnn.bias_hh[self.hidden_size : 2 * self.hidden_size], val=1
             )
 
-    def forward(self, messages=None):
+    def forward(self, messages):
         batch_size = messages.shape[0]
 
-        emb = torch.matmul(messages, self.embedding)
+        emb = (
+            torch.matmul(messages, self.embedding)
+            if self.training
+            else self.embedding[messages]
+        )
 
         # initialize hidden
         h = torch.zeros([batch_size, self.hidden_size], device=device)
@@ -83,16 +86,13 @@ class Receiver(nn.Module):
             h = (h, c)
 
         # make sequence_length be first dim
-        seq_iterator = emb.transpose(
-            0, 1
-        )  # size: seq_length x batch_size x embedding_size
+        seq_iterator = emb.transpose(0, 1)
         for w in seq_iterator:
             h = self.rnn(w, h)
 
         if self.cell_type == "lstm":
             h = h[0]  # keep only hidden state
 
-        out = h
         out = self.output_module(h)
 
         return out, emb

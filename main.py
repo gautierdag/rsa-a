@@ -90,6 +90,11 @@ def main(args):
     seed_torch(seed=args.seed)
     model_name = get_filename(args)
     run_folder = "runs/" + model_name + "/" + str(args.seed)
+
+    create_folder_if_not_exists("runs")
+    create_folder_if_not_exists("runs/" + model_name)
+    create_folder_if_not_exists("runs/" + model_name + "/" + str(args.seed))
+
     model_path = run_folder + "/model.p"
 
     vocab = AgentVocab(args.vocab_size)
