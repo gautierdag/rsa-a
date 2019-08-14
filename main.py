@@ -4,8 +4,8 @@ import torch
 
 from utils import *
 from data import *
-from .model import Sender, Receiver
-from .trainer import ReferentialTrainer
+from model import Sender, Receiver
+from trainer import ReferentialTrainer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -96,46 +96,28 @@ def main(args):
 
     # get sender and receiver models and save them
     sender = Sender(
-        args.vocab_size,
+        vocab.full_vocab_size,
         args.max_length,
-        vocab.eos,
+        vocab.sos,
+        input_size=14,
         embedding_size=args.embedding_size,
         hidden_size=args.hidden_size,
         greedy=True,
-        gumbel_softmax=True,
-        input_size=15,
     )
 
     receiver = Receiver(
-        args.vocab_size,
+        vocab.full_vocab_size,
         embedding_size=args.embedding_size,
         hidden_size=args.hidden_size,
-        output_size=15,
+        output_size=14,
     )
 
     model = ReferentialTrainer(sender, receiver)
 
     epoch, iteration = 0, 0
-
     if args.resume_training:
         epoch, iteration = load_model_state(model, model_path)
         print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
-
-    # meta = get_encoded_metadata(size=1000)
-    # meaning_space = np.unique(meta, axis=0)
-    # dataset = ReferentialDataset(meaning_space.astype(np.float32))
-    # sampler = ReferentialSampler
-    # train_data, valid_data = split_dataset_into_dataloaders(
-    #     dataset, sizes=[100, 62], sampler=sampler
-    # )
-
-    train_data, valid_data, _, _, _ = get_training_data(
-        device=device,
-        batch_size=args.batch_size,
-        k=3,
-        dataset_type="meta",
-        debugging=False,
-    )
 
     pytorch_total_params = sum(p.numel() for p in model.parameters())
 
@@ -149,41 +131,33 @@ def main(args):
     print(sender)
     if receiver:
         print(receiver)
-
     print("Total number of parameters: {}".format(pytorch_total_params))
-
     model.to(device)
-
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    # dataset
+    train_data = get_referential_dataloader("shapes_train5k", size=5000)
+    valid_data = get_referential_dataloader("shapes_valid5k", size=5000)
 
     # Train
     while iteration < args.iterations:
-        for train_batch in train_data:
+        for (targets, distractors) in train_data:
             print(f"{iteration}/{args.iterations}\r", end="")
 
-            train_helper.train_one_batch(model, train_batch, optimizer, None, device)
+            train_one_batch(model, optimizer, targets, distractors)
 
             if iteration % args.log_interval == 0:
-                valid_loss_meter, valid_acc_meter, messages, = train_helper.evaluate(
-                    model, valid_data, None, device, False
+                valid_loss_meter, valid_acc_meter, messages, _ = evaluate(
+                    model, valid_data
                 )
                 save_model_state(model, model_path, epoch, iteration)
                 torch.save(messages, run_folder + "/messages_at_{}.p".format(iteration))
-
-                metrics = {
-                    "loss": valid_loss_meter.avg,
-                    "accuracy": valid_acc_meter.avg,
-                }
-
-                logger.log_metrics(iteration, metrics)
 
             iteration += 1
             if iteration >= args.iterations:
                 break
 
         epoch += 1
-
-    return run_folder
 
 
 if __name__ == "__main__":

@@ -115,6 +115,9 @@ class Sender(nn.Module):
         self.vocab_size = vocab_size
         self.cell_type = cell_type
         self.output_len = output_len
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.embedding_size = embedding_size
 
         self.sos_id = sos_id
         if eos_id is None:
@@ -126,8 +129,6 @@ class Sender(nn.Module):
         if self.input_size != self.hidden_size:
             self.input_module = nn.Linear(input_size, hidden_size)
 
-        self.embedding_size = embedding_size
-        self.hidden_size = hidden_size
         self.greedy = greedy
 
         if cell_type == "lstm":
@@ -292,3 +293,4 @@ class Sender(nn.Module):
             torch.stack(embeds, dim=1),
             sentence_probability,
         )
+

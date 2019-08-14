@@ -35,32 +35,17 @@ class AverageMeter:
         self.avg = self.sum / self.count
 
 
-def train_one_batch(model, batch, targets, optimizer):
+def train_one_batch(model, optimizer, targets, distractors):
     """
     Train for single batch
     """
     model.train()
     optimizer.zero_grad()
-    loss, acc, _, _ = model(batch, targets)
+    loss, acc, _ = model(targets, distractors)
     loss.backward()
     optimizer.step()
 
     return loss.item(), acc.item()
-
-
-def train_one_epoch(model, data, optimizer):
-    """
-    Train for a whole epoch
-    """
-    loss_meter = AverageMeter()
-    acc_meter = AverageMeter()
-
-    for d in tqdm(data, total=len(data)):
-        loss, acc = train_one_batch(model, d, optimizer)
-        loss_meter.update(loss)
-        acc_meter.update(acc)
-
-    return loss_meter, acc_meter
 
 
 def evaluate(model, data):
@@ -74,8 +59,8 @@ def evaluate(model, data):
 
     model.eval()
     with torch.no_grad():
-        for (batch, targets) in data:
-            loss, acc, seq, hid = model(batch, targets)
+        for (targets, distractors) in data:
+            loss, acc, seq, hid, _, _, _ = model(targets, distractors)
             loss_meter.update(loss.item())
             acc_meter.update(acc.item())
             sequences.append(seq)
@@ -85,8 +70,6 @@ def evaluate(model, data):
 
 
 # Folder/Saving/Loading functions
-
-
 def get_filename(params):
     """
     Generates a filename from baseline params (see baseline.py)
@@ -98,9 +81,6 @@ def get_filename(params):
     name += "_max_len_{}".format(params.max_length)
     name += "_vocab_{}".format(params.vocab_size)
     name += "_btch_size_{}".format(params.batch_size)
-
-    if params.debugging:
-        name += "_debug"
     return name
 
 
