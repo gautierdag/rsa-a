@@ -5,3 +5,6 @@ for seed in 1 2 3 4 5
   do
     python main.py --seed $seed --resume
   done
+
+echo "Computing RSAs"
+python compute_rsas.py
