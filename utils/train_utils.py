@@ -122,7 +122,7 @@ def get_filename(params):
     return name
 
 
-def seed_torch(seed=42):
+def seed_torch(seed: int = 42):
     """
     Seed random, numpy and torch with same seed
     """
@@ -133,7 +133,7 @@ def seed_torch(seed=42):
         torch.cuda.manual_seed(seed)
 
 
-def create_folder_if_not_exists(folder_name):
+def create_folder_if_not_exists(folder_name: str):
     """
     Creates folder at folder name if folder does not exist
     """
@@ -154,7 +154,7 @@ def save_model_state(model, model_path: str, epoch: int, iteration: int):
     torch.save(checkpoint_state, model_path)
 
 
-def load_model_state(model, model_path):
+def load_model_state(model, model_path: str):
     if not os.path.isfile(model_path):
         raise Exception(f'Model not found at "{model_path}"')
     checkpoint = torch.load(model_path)

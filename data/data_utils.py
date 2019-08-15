@@ -39,15 +39,21 @@ class ReferentialDataset:
 
 
 class ReferentialSampler(Sampler):
-    def __init__(self, data_source, k=3):
+    def __init__(self, data_source, k: int = 3, shuffle: bool = False):
         self.data_source = data_source
         self.n = len(data_source)
         self.k = k
+        self.shuffle = shuffle
         assert self.k < self.n
 
     def __iter__(self):
         indices = []
-        for t in range(self.n):
+
+        targets = list(range(self.n))
+        if self.shuffle:
+            random.shuffle(targets)
+
+        for t in targets:
             # target in first position with k random distractors following
             indices.append(
                 np.array(
@@ -64,9 +70,18 @@ class ReferentialSampler(Sampler):
         return self.n
 
 
-def get_referential_dataloader(file_name: str, batch_size: int = 32):
+def get_referential_dataloader(
+    file_name: str, batch_size: int = 32, shuffle: bool = False, k: int = 3
+):
     """
     Splits a pytorch dataset into different sizes of dataloaders
+    Args:
+        filename: filename to load
+        Batch size : number of examples per batch_size
+        shuffle (bool): whether to shuffle dataset
+        k (int): number of distractors
+    Returns:
+        dataloader
     """
     # load if already exists
     file_path = dir_path + "/" + file_name
@@ -83,6 +98,8 @@ def get_referential_dataloader(file_name: str, batch_size: int = 32):
         dataset,
         pin_memory=True,
         batch_sampler=BatchSampler(
-            ReferentialSampler(dataset), batch_size=batch_size, drop_last=False
+            ReferentialSampler(dataset, k=k, shuffle=shuffle),
+            batch_size=batch_size,
+            drop_last=False,
         ),
     )

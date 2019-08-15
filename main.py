@@ -128,20 +128,16 @@ def main(args):
 
     # Print info
     print("----------------------------------------")
-    print(
-        "Model name: {} \n|V|: {}\nL: {}".format(
-            model_name, args.vocab_size, args.max_length
-        )
-    )
+    print(f"Model name: {model_name} \n|V|: {args.vocab_size}\nL: { args.max_length}")
     print(sender)
     if receiver:
         print(receiver)
-    print("Total number of parameters: {}".format(pytorch_total_params))
+    print(f"Total number of parameters: {pytorch_total_params}")
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # dataset
-    train_data = get_referential_dataloader("shapes")
+    # datasets
+    train_data = get_referential_dataloader("shapes", shuffle=True)
     valid_data = get_referential_dataloader("shapes")
 
     # Train

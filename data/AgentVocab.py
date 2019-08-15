@@ -13,9 +13,9 @@ class AgentVocab(object):
     EOS_TOKEN = "<EOS>"
     PAD_TOKEN = "<PAD>"
 
-    def __init__(self, vocab_size):
+    def __init__(self, vocab_size: int):
         self.vocab_size = vocab_size
-        self.full_vocab_size = vocab_size+3 # add specific tokens
+        self.full_vocab_size = vocab_size + 3  # add specific tokens
 
         self.file_path = dir_path + "/dict_{}.pckl".format(self.vocab_size)
         if self.does_vocab_exist():
@@ -50,7 +50,7 @@ class AgentVocab(object):
         self.stoi[self.PAD_TOKEN] = 0
 
         # add vocab tokens to itos and stoi
-        for i in range(1, self.vocab_size+1):
+        for i in range(1, self.vocab_size + 1):
             self.itos.append(str(i))
             self.stoi[str(i)] = i
 
@@ -63,5 +63,5 @@ class AgentVocab(object):
         self.pad = self.stoi[self.PAD_TOKEN]
         self.sos = self.stoi[self.SOS_TOKEN]
         self.eos = self.stoi[self.EOS_TOKEN]
-        
+
         self.save_vocab()
