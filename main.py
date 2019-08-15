@@ -153,7 +153,6 @@ def main(args):
             if iteration % args.log_interval == 0:
                 metrics = evaluate(model, valid_data)
                 save_model_state(model, model_path, epoch, iteration)
-
                 pickle.dump(
                     metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
                 )
