@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Running baseline"
-for seed in 1 2 3 4 5 
+for seed in {1..10} 
   do
     python main.py --seed $seed --resume
   done
