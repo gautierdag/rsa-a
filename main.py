@@ -24,7 +24,7 @@ def parse_arguments(args):
         help="number of batch iterations to train (default: 10k)",
     )
     parser.add_argument(
-        "--seed", type=int, default=1, metavar="S", help="random seed (default: 42)"
+        "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)"
     )
     parser.add_argument(
         "--embedding-size",
@@ -45,7 +45,7 @@ def parse_arguments(args):
         type=int,
         default=32,
         metavar="N",
-        help="input batch size for training (default: 1024)",
+        help="input batch size for training (default: 32)",
     )
     parser.add_argument(
         "--max-length",
