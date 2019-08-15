@@ -13,7 +13,7 @@ def _one_hot(a):
     return out
 
 
-def generate_dataset(size: int, atttribute_vector: list = SHAPES_ATTRIBUTES):
+def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES):
     """
     Generates a dataset based on the vector of attributes passed
     """
@@ -35,5 +35,5 @@ def generate_dataset(size: int, atttribute_vector: list = SHAPES_ATTRIBUTES):
     one_hot_derivations = np.delete(one_hot_derivations, remove_idx, axis=1)
 
     # randomly samply from possible combinations
-    idxs = np.random.choice(range(len(one_hot_derivations)), size, replace=True)
-    return one_hot_derivations[idxs]
+    # idxs = np.random.choice(range(len(one_hot_derivations)), size, replace=True)
+    return one_hot_derivations

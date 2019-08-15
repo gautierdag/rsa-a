@@ -1,6 +1,7 @@
 import argparse
 import sys
 import torch
+import pickle
 
 from utils import *
 from data import *
@@ -23,7 +24,7 @@ def parse_arguments(args):
         help="number of batch iterations to train (default: 10k)",
     )
     parser.add_argument(
-        "--seed", type=int, default=42, metavar="S", help="random seed (default: 42)"
+        "--seed", type=int, default=1, metavar="S", help="random seed (default: 42)"
     )
     parser.add_argument(
         "--embedding-size",
@@ -101,9 +102,8 @@ def main(args):
 
     # get sender and receiver models and save them
     sender = Sender(
-        vocab.full_vocab_size,
+        vocab,
         args.max_length,
-        vocab.sos,
         input_size=14,
         embedding_size=args.embedding_size,
         hidden_size=args.hidden_size,
@@ -111,7 +111,7 @@ def main(args):
     )
 
     receiver = Receiver(
-        vocab.full_vocab_size,
+        vocab,
         embedding_size=args.embedding_size,
         hidden_size=args.hidden_size,
         output_size=14,
@@ -141,8 +141,8 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # dataset
-    train_data = get_referential_dataloader("shapes_train5k", size=5000)
-    valid_data = get_referential_dataloader("shapes_valid5k", size=5000)
+    train_data = get_referential_dataloader("shapes")
+    valid_data = get_referential_dataloader("shapes")
 
     # Train
     while iteration < args.iterations:
@@ -152,11 +152,13 @@ def main(args):
             train_one_batch(model, optimizer, targets, distractors)
 
             if iteration % args.log_interval == 0:
-                valid_loss_meter, valid_acc_meter, messages, _ = evaluate(
-                    model, valid_data
-                )
+                metrics = evaluate(model, valid_data)
                 save_model_state(model, model_path, epoch, iteration)
-                torch.save(messages, run_folder + "/messages_at_{}.p".format(iteration))
+
+                pickle.dump(
+                    metrics, open(run_folder + f"/metrics_at_{iteration}.pkl", "wb")
+                )
+                print(f"\t\t acc: {metrics['acc']:.3f}\r", end="")
 
             iteration += 1
             if iteration >= args.iterations:

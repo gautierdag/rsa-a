@@ -64,7 +64,7 @@ class ReferentialSampler(Sampler):
         return self.n
 
 
-def get_referential_dataloader(file_name: str, size: int = 10000, batch_size: int = 32):
+def get_referential_dataloader(file_name: str, batch_size: int = 32):
     """
     Splits a pytorch dataset into different sizes of dataloaders
     """
@@ -74,7 +74,7 @@ def get_referential_dataloader(file_name: str, size: int = 10000, batch_size: in
     if os.path.exists(file_path):
         return np.load(file_path)
     else:
-        data = generate_dataset(size=size)
+        data = generate_dataset()
         # save locally
         np.save(file_path, data)
 

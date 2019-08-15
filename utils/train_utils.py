@@ -52,21 +52,59 @@ def evaluate(model, data):
     """
     Evaluates model on data
     """
+    # metrics
     loss_meter = AverageMeter()
     acc_meter = AverageMeter()
+    ent_meter = AverageMeter()
+
+    # messages
     sequences = []
-    hidden_states = []
+
+    # hidden states
+    h_sender = []
+    h_rnn_sender = []
+    h_receiver = []
+    h_rnn_receiver = []
+
+    # targets and distractors
+    T = []
+    D = []
 
     model.eval()
     with torch.no_grad():
         for (targets, distractors) in data:
-            loss, acc, seq, hid, _, _, _ = model(targets, distractors)
+            T.append(targets)
+            D.append(torch.cat(distractors, 0))
+
+            loss, acc, ent, seq, h_s, h_rnn_s, h_r, h_rnn_r = model(
+                targets, distractors
+            )
+
             loss_meter.update(loss.item())
             acc_meter.update(acc.item())
-            sequences.append(seq)
-            hidden_states.append(hid)
+            ent_meter.update(ent)
 
-    return loss_meter, acc_meter, torch.cat(sequences, 0), torch.cat(hidden_states, 0)
+            sequences.append(seq)
+
+            h_sender.append(h_s)
+            h_rnn_sender.append(h_rnn_s)
+            h_receiver.append(h_r)
+            h_rnn_receiver.append(h_rnn_r)
+
+    metrics = {
+        "loss": loss_meter.avg,
+        "acc": acc_meter.avg,
+        "entropy": ent_meter.avg,
+        "messages": torch.cat(sequences, 0).cpu().numpy(),
+        "h_sender": torch.cat(h_rnn_sender, 0).cpu().numpy(),
+        "h_rnn_sender": torch.cat(h_rnn_sender, 0).cpu().numpy(),
+        "h_receiver": torch.cat(h_rnn_sender, 0).cpu().numpy(),
+        "h_rnn_receiver": torch.cat(h_rnn_receiver, 0).cpu().numpy(),
+        "targets": torch.cat(T, 0).cpu().numpy(),
+        "distractors": torch.cat(D, 0).cpu().numpy(),
+    }
+
+    return metrics
 
 
 # Folder/Saving/Loading functions

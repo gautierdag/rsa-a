@@ -4,6 +4,8 @@ from torch.nn import functional as F
 from torch.distributions.categorical import Categorical
 from torch.distributions.relaxed_categorical import RelaxedOneHotCategorical
 
+from data import AgentVocab
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -29,13 +31,15 @@ def _gumbel_softmax(probs, tau, hard):
 class Receiver(nn.Module):
     def __init__(
         self,
-        vocab_size,
-        embedding_size=256,
-        hidden_size=512,
-        cell_type="lstm",
-        output_size=64,
+        vocab: AgentVocab,
+        embedding_size: int = 64,
+        hidden_size: int = 64,
+        output_size: int = 64,
+        cell_type: str = "lstm",
     ):
         super().__init__()
+
+        self.vocab_size = vocab.full_vocab_size
 
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
@@ -50,7 +54,7 @@ class Receiver(nn.Module):
             )
 
         self.embedding = nn.Parameter(
-            torch.empty((vocab_size, embedding_size), dtype=torch.float32)
+            torch.empty((self.vocab_size, embedding_size), dtype=torch.float32)
         )
 
         self.output_module = nn.Identity()
@@ -101,29 +105,27 @@ class Receiver(nn.Module):
 class Sender(nn.Module):
     def __init__(
         self,
-        vocab_size,
-        output_len,
-        sos_id,
-        eos_id=None,
-        input_size=64,
-        embedding_size=64,
-        hidden_size=64,
-        greedy=False,
-        cell_type="lstm",
+        vocab: AgentVocab,
+        output_len: int,
+        input_size: int = 64,
+        embedding_size: int = 64,
+        hidden_size: int = 64,
+        greedy: bool = False,
+        cell_type: str = "lstm",
     ):
         super().__init__()
-        self.vocab_size = vocab_size
+
+        # set vocab
+        self.vocab_size = vocab.full_vocab_size
+        self.sos_id = vocab.sos
+        self.eos_id = vocab.eos
+        self.pad_id = vocab.pad
+
         self.cell_type = cell_type
         self.output_len = output_len
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.embedding_size = embedding_size
-
-        self.sos_id = sos_id
-        if eos_id is None:
-            self.eos_id = sos_id
-        else:
-            self.eos_id = eos_id
 
         self.input_module = nn.Identity()
         if self.input_size != self.hidden_size:
@@ -139,10 +141,10 @@ class Sender(nn.Module):
             )
 
         self.embedding = nn.Parameter(
-            torch.empty((vocab_size, embedding_size), dtype=torch.float32)
+            torch.empty((self.vocab_size, embedding_size), dtype=torch.float32)
         )
         self.linear_out = nn.Linear(
-            hidden_size, vocab_size
+            hidden_size, self.vocab_size
         )  # from a hidden state to the vocab
 
         self.reset_parameters()
@@ -215,7 +217,7 @@ class Sender(nn.Module):
         mask *= seq_lengths == initial_length
         seq_lengths[mask.nonzero()] = seq_pos + 1  # start always token appended
 
-    def forward(self, tau=1.2, hidden_state=None):
+    def forward(self, hidden_state, tau=1.2):
         """
         Performs a forward pass. If training, use Gumbel Softmax (hard) for sampling, else use
         discrete sampling.
@@ -250,7 +252,6 @@ class Sender(nn.Module):
 
         embeds = []  # keep track of the embedded sequence
         entropy = 0.0
-        sentence_probability = torch.zeros((batch_size, self.vocab_size), device=device)
 
         for i in range(self.output_len):
             if self.training:
@@ -272,7 +273,6 @@ class Sender(nn.Module):
             if self.training:
                 token = _gumbel_softmax(p, tau, hard=True)
             else:
-                sentence_probability += p.detach()
                 if self.greedy:
                     _, token = torch.max(p, -1)
 
@@ -290,7 +290,7 @@ class Sender(nn.Module):
             torch.stack(output, dim=1),
             seq_lengths,
             torch.mean(entropy) / self.output_len,
+            hidden_state,
             torch.stack(embeds, dim=1),
-            sentence_probability,
         )
 

@@ -26,10 +26,10 @@ class ReferentialTrainer(nn.Module):
             mask = mask.type(dtype=messages.dtype)
             messages = messages * mask.unsqueeze(2)
             # give full probability (1) to eos tag (used as padding in this case)
-            messages[:, :, self.sender.eos_id] += (mask == 0).type(dtype=messages.dtype)
+            messages[:, :, self.sender.pad_id] += (mask == 0).type(dtype=messages.dtype)
         else:
             # fill in the rest of message with eos
-            messages = messages.masked_fill_(mask == 0, self.sender.eos_id)
+            messages = messages.masked_fill_(mask == 0, self.sender.pad_id)
 
         return messages
 
@@ -39,20 +39,19 @@ class ReferentialTrainer(nn.Module):
         target = target.to(device)
         distractors = [d.to(device) for d in distractors]
 
-        messages, lengths, entropy, h_s, sent_p = self.sender(hidden_state=target)
+        messages, lengths, entropy, h_s, h_rnn_s = self.sender(target)
         messages = self._pad(messages, lengths)
-        r_transform, h_r = self.receiver(messages=messages)
-
-        loss = 0
+        h_r, h_rnn_r = self.receiver(messages=messages)
 
         target = target.view(batch_size, 1, -1)
-        r_transform = r_transform.view(batch_size, -1, 1)
+        r_transform = h_r.view(batch_size, -1, 1)
 
         target_score = torch.bmm(target, r_transform).squeeze()  # scalar
 
         all_scores = torch.zeros((batch_size, 1 + len(distractors)))
         all_scores[:, 0] = target_score
 
+        loss = 0
         for i, d in enumerate(distractors):
             d = d.view(batch_size, 1, -1)
             d_score = torch.bmm(d, r_transform).squeeze()
@@ -69,14 +68,15 @@ class ReferentialTrainer(nn.Module):
         accuracy = accuracy.to(dtype=torch.float32)
 
         if self.training:
-            return torch.mean(loss), torch.mean(accuracy), messages
+            return (torch.mean(loss), torch.mean(accuracy), messages)
         else:
             return (
                 torch.mean(loss),
                 torch.mean(accuracy),
-                messages,
-                h_s,
-                h_r,
                 entropy,
-                sent_p,
+                messages,
+                h_s.detach(),
+                h_rnn_s.detach(),
+                h_r.detach(),
+                h_rnn_r.detach(),
             )
