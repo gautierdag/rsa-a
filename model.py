@@ -9,7 +9,7 @@ from data import AgentVocab
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def _gumbel_softmax(probs, tau, hard):
+def _gumbel_softmax(probs, tau: float, hard: bool):
     """ Computes sampling from the Gumbel Softmax (GS) distribution
     Args:
         probs (torch.tensor): probabilities of shape [batch_size, n_classes] 
