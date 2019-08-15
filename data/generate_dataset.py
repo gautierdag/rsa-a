@@ -1,15 +1,17 @@
 import itertools
 import numpy as np
+from typing import Optional
 
 # 3 colors, 3 shapes, 2 sizes, 3 position y, 3 position x
 SHAPES_ATTRIBUTES = [3, 3, 2, 3, 3]
 
 
-def _one_hot(a):
-    ncols = a.max() + 1
-    out = np.zeros((a.size, ncols), dtype=np.uint8)
+def one_hot(a, n_cols: Optional[int] = None):
+    if n_cols is None or n_cols < a.max() + 1:
+        n_cols = a.max() + 1
+    out = np.zeros((a.size, n_cols), dtype=np.uint8)
     out[np.arange(a.size), a.ravel()] = 1
-    out.shape = a.shape + (ncols,)
+    out.shape = a.shape + (n_cols,)
     return out
 
 
@@ -26,7 +28,7 @@ def generate_dataset(atttribute_vector: list = SHAPES_ATTRIBUTES):
     all_possible_values = np.array(list(itertools.product(*possible_values)))
 
     # one hot encode
-    one_hot_derivations = _one_hot(all_possible_values).reshape(
+    one_hot_derivations = one_hot(all_possible_values).reshape(
         all_possible_values.shape[0], -1
     )
 
