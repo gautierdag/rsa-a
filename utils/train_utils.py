@@ -77,7 +77,7 @@ def evaluate(model, data) -> dict:
 
             loss_meter.update(loss.item())
             acc_meter.update(acc.item())
-            ent_meter.update(ent)
+            ent_meter.update(ent.item())
 
             sequences.append(seq)
 

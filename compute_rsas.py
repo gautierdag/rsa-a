@@ -44,3 +44,32 @@ if __name__ == "__main__":
                 m[rsa_title] = r
         pickle.dump(m, open(file, "wb"))
 
+    # Calculate Cross-Seed RSA for all in baseline
+    baseline_path = "runs/lstm_h_64_lr_0.001_max_len_10_vocab_25"
+    seed_folders = glob.glob(f"{baseline_path}/*")
+
+    RESULTS = {}
+    for space in tqdm(DIST):
+        RESULTS[space] = {}
+        for s1, s2 in combinations(seed_folders, 2):
+
+            seed1 = s1.split("/")[-1]
+            seed2 = s2.split("/")[-1]
+
+            RESULTS[space][seed1 + seed2] = {}
+
+            files_s1 = glob.glob(f"{s1}/*.pkl")
+            for f1 in files_s1:
+                metric_file = f1.split("/")[-1]
+                iteration = int(metric_file.split("_")[-1].split(".")[0])
+                f2 = f"{s2}/{metric_file}"
+                if os.path.isfile(f2):
+
+                    m1 = pickle.load(open(f1, "rb"))
+                    m2 = pickle.load(open(f2, "rb"))
+
+                    r = rsa(m1[space], m2[space], DIST[space], DIST[space])
+                    RESULTS[space][seed1 + seed2][iteration] = r
+
+    pickle.dump(RESULTS, open(f"{baseline_path}/rsa_analysis.pkl", "wb"))
+
