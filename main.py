@@ -6,8 +6,7 @@ import pickle
 
 from utils import *
 from data import *
-from model import Sender, Receiver
-from trainer import ReferentialTrainer
+from models import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
