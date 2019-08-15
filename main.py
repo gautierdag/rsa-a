@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 import torch
 import pickle
 
@@ -77,12 +78,13 @@ def parse_arguments(args):
         help="number of iterations between logs (default: 200)",
     )
     parser.add_argument(
-        "--resume-training",
+        "--resume",
         help="Resume the training from the saved model state",
         action="store_true",
     )
 
     args = parser.parse_args(args)
+
     return args
 
 
@@ -100,7 +102,7 @@ def main(args):
 
     vocab = AgentVocab(args.vocab_size)
 
-    # get sender and receiver models and save them
+    # get sender and receiver models
     sender = Sender(
         vocab,
         args.max_length,
@@ -120,20 +122,22 @@ def main(args):
     model = ReferentialTrainer(sender, receiver)
 
     epoch, iteration = 0, 0
-    if args.resume_training:
+    if args.resume and os.path.isfile(model_path):
         epoch, iteration = load_model_state(model, model_path)
         print(f"Loaded model. Resuming from - epoch: {epoch} | iteration: {iteration}")
-
-    pytorch_total_params = sum(p.numel() for p in model.parameters())
 
     # Print info
     print("----------------------------------------")
     print(f"Model name: {model_name} \n|V|: {args.vocab_size}\nL: { args.max_length}")
-    print(sender)
-    if receiver:
-        print(receiver)
+    print(model.sender)
+    print(model.receiver)
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
     print(f"Total number of parameters: {pytorch_total_params}")
+
+    # send model to device
     model.to(device)
+
+    # set optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # datasets

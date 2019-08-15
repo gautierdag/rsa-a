@@ -1,19 +1,16 @@
 import numpy as np
-import torch
 import random
 import os
 
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import Sampler, BatchSampler
-from torch.utils.data.dataset import random_split
-import torchvision.transforms
 
 from .generate_dataset import generate_dataset
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
-class ReferentialDataset:
+class ReferentialDataset(Dataset):
     """
     Referential Game Dataset
     """

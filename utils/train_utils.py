@@ -1,12 +1,7 @@
 import random
 import numpy as np
 import torch
-import pickle
-from torch.utils.data import random_split, DataLoader
-from torch.utils.data.sampler import BatchSampler
-from tqdm import tqdm
-from functools import partial
-import glob
+from typing import Tuple
 import os
 
 
@@ -48,7 +43,7 @@ def train_one_batch(model, optimizer, targets, distractors):
     return loss.item(), acc.item()
 
 
-def evaluate(model, data):
+def evaluate(model, data) -> dict:
     """
     Evaluates model on data
     """
@@ -108,7 +103,7 @@ def evaluate(model, data):
 
 
 # Folder/Saving/Loading functions
-def get_filename(params):
+def get_filename(params: dict) -> str:
     """
     Generates a filename from baseline params (see baseline.py)
     """
@@ -122,7 +117,7 @@ def get_filename(params):
     return name
 
 
-def seed_torch(seed: int = 42):
+def seed_torch(seed: int = 42) -> None:
     """
     Seed random, numpy and torch with same seed
     """
@@ -133,7 +128,7 @@ def seed_torch(seed: int = 42):
         torch.cuda.manual_seed(seed)
 
 
-def create_folder_if_not_exists(folder_name: str):
+def create_folder_if_not_exists(folder_name: str) -> None:
     """
     Creates folder at folder name if folder does not exist
     """
@@ -141,29 +136,19 @@ def create_folder_if_not_exists(folder_name: str):
         os.makedirs(folder_name)
 
 
-def save_model_state(model, model_path: str, epoch: int, iteration: int):
+def save_model_state(model, model_path: str, epoch: int, iteration: int) -> None:
     checkpoint_state = {}
-    if model.sender:
-        checkpoint_state["sender"] = model.sender.state_dict()
-    if model.receiver:
-        checkpoint_state["receiver"] = model.receiver.state_dict()
-    if epoch:
-        checkpoint_state["epoch"] = epoch
-    if iteration:
-        checkpoint_state["iteration"] = iteration
+    checkpoint_state["sender"] = model.sender.state_dict()
+    checkpoint_state["receiver"] = model.receiver.state_dict()
+    checkpoint_state["epoch"] = epoch
+    checkpoint_state["iteration"] = iteration
     torch.save(checkpoint_state, model_path)
 
 
-def load_model_state(model, model_path: str):
-    if not os.path.isfile(model_path):
-        raise Exception(f'Model not found at "{model_path}"')
+def load_model_state(model, model_path: str) -> Tuple[int, int]:
     checkpoint = torch.load(model_path)
-    if "sender" in checkpoint.keys() and checkpoint["sender"]:
-        model.sender.load_state_dict(checkpoint["sender"])
-    if "receiver" in checkpoint.keys() and checkpoint["receiver"]:
-        model.receiver.load_state_dict(checkpoint["receiver"])
-    if "epoch" in checkpoint.keys() and checkpoint["epoch"]:
-        epoch = checkpoint["epoch"]
-    if "iteration" in checkpoint.keys() and checkpoint["iteration"]:
-        iteration = checkpoint["iteration"]
+    model.sender.load_state_dict(checkpoint["sender"])
+    model.receiver.load_state_dict(checkpoint["receiver"])
+    epoch = checkpoint["epoch"]
+    iteration = checkpoint["iteration"]
     return epoch, iteration
