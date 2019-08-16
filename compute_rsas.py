@@ -3,6 +3,7 @@ Calculates all the RSA for all run files
 """
 import glob
 import pickle
+import os
 from itertools import combinations
 from scipy import spatial
 from metrics import rsa
